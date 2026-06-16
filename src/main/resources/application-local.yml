@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:dental_clinic;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: false
+  cache:
+    type: simple
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+jwt:
+  secret: dHJ1bHlkb250YWxjbGluaWNzZWNyZXRrZXlmb3Jqd3R0b2tlbjIwMjRzdXBlcnNlY3VyZQ==
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+
+logging:
+  level:
+    root: INFO
+    com.dentalclinic: DEBUG
+    org.springframework.security: INFO
