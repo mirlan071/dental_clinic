@@ -2,7 +2,6 @@ package com.dentalclinic.controller;
 
 import com.dentalclinic.controller.dto.auth.*;
 import com.dentalclinic.controller.dto.common.ApiResponse;
-import com.dentalclinic.domain.user.User;
 import com.dentalclinic.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,11 +34,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Token refreshed", token));
     }
 
-    @Operation(summary = "Register new user")
+    @Operation(summary = "Register new user (admin only)")
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<User>> register(@Valid @RequestBody RegisterRequest request) {
-        User user = authService.register(request);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<TokenResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        TokenResponse token = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User registered successfully", user));
+                .body(ApiResponse.success("User registered successfully", token));
     }
 }

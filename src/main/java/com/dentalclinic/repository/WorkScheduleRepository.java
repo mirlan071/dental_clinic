@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 
 @Repository
@@ -21,5 +22,13 @@ public interface WorkScheduleRepository extends JpaRepository<WorkSchedule, Long
     List<WorkSchedule> findActiveScheduleAtTime(
             @Param("doctorId") Long doctorId,
             @Param("dayOfWeek") DayOfWeek dayOfWeek,
-            @Param("time") java.time.LocalTime time);
+            @Param("time") LocalTime time);
+
+    @Query("SELECT ws FROM WorkSchedule ws WHERE ws.doctor.id = :doctorId AND ws.active = true " +
+           "AND ws.dayOfWeek = :dayOfWeek AND ws.startTime < :endTime AND ws.endTime > :startTime")
+    List<WorkSchedule> findOverlappingSchedules(
+            @Param("doctorId") Long doctorId,
+            @Param("dayOfWeek") DayOfWeek dayOfWeek,
+            @Param("startTime") LocalTime startTime,
+            @Param("endTime") LocalTime endTime);
 }

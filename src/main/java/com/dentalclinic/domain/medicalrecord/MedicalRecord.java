@@ -47,6 +47,9 @@ public class MedicalRecord extends BaseEntity {
     @Column(length = 5000)
     private String notes;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     @OneToMany(mappedBy = "medicalRecord", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<DocumentAttachment> documents = new ArrayList<>();

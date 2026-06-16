@@ -24,8 +24,6 @@ public interface DoctorMapper {
     @Mapping(target = "fullName", expression = "java(doctor.getFullName())")
     DoctorResponse toResponse(Doctor doctor);
 
-    List<DoctorResponse> toResponseList(List<Doctor> doctors);
-
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntity(DoctorUpdateRequest request, @MappingTarget Doctor doctor);
 

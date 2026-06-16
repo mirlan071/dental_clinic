@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:dental_clinic}
-    username: ${DB_USERNAME:dental}
-    password: ${DB_PASSWORD:dental_secret}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:30}
       minimum-idle: ${DB_POOL_MIN:10}

@@ -117,6 +117,12 @@ public class DoctorService {
             throw new IllegalArgumentException("End time must be after start time");
         }
 
+        List<WorkSchedule> overlaps = workScheduleRepository.findOverlappingSchedules(
+                doctorId, request.getDayOfWeek(), request.getStartTime(), request.getEndTime());
+        if (!overlaps.isEmpty()) {
+            throw new IllegalArgumentException("Schedule overlaps with an existing schedule on " + request.getDayOfWeek());
+        }
+
         WorkSchedule schedule = doctorMapper.toScheduleEntity(request);
         schedule.setDoctor(doctor);
         WorkSchedule saved = workScheduleRepository.save(schedule);

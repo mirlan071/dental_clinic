@@ -53,7 +53,7 @@ public class AuthService {
     public TokenResponse refresh(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
-        if (!tokenProvider.validateToken(refreshToken)) {
+        if (!tokenProvider.validateRefreshToken(refreshToken)) {
             throw new DuplicateResourceException("Invalid refresh token");
         }
 
@@ -75,7 +75,7 @@ public class AuthService {
     }
 
     @Transactional
-    public User register(RegisterRequest request) {
+    public TokenResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateResourceException("User", "username", request.getUsername());
         }
@@ -89,6 +89,17 @@ public class AuthService {
 
         User saved = userRepository.save(user);
         log.info("User registered: {}", saved.getUsername());
-        return saved;
+
+        String accessToken = tokenProvider.generateAccessToken(saved.getUsername());
+        String refreshToken = tokenProvider.generateRefreshToken(saved.getUsername());
+
+        return TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(tokenProvider.getAccessTokenExpiration())
+                .role(saved.getRole().name())
+                .username(saved.getUsername())
+                .build();
     }
 }

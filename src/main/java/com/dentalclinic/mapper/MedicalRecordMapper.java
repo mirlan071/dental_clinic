@@ -21,8 +21,6 @@ public interface MedicalRecordMapper {
     @Mapping(target = "appointmentId", expression = "java(record.getAppointment() != null ? record.getAppointment().getId() : null)")
     MedicalRecordResponse toResponse(MedicalRecord record);
 
-    List<MedicalRecordResponse> toResponseList(List<MedicalRecord> records);
-
     DocumentAttachmentResponse toDocumentResponse(DocumentAttachment document);
 
     List<DocumentAttachmentResponse> toDocumentResponseList(List<DocumentAttachment> documents);

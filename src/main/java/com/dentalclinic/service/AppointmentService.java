@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -108,7 +107,7 @@ public class AppointmentService {
         LocalDateTime newEndTime = newStartTime.plusMinutes(totalDuration);
 
         checkDoctorConflict(appointment.getDoctor().getId(), newStartTime, newEndTime, id);
-        checkPatientConflict(appointment.getPatient().getId(), newStartTime, newEndTime);
+        checkPatientConflict(appointment.getPatient().getId(), newStartTime, newEndTime, id);
 
         appointment.setStartTime(newStartTime);
         appointment.setEndTime(newEndTime);
@@ -172,8 +171,13 @@ public class AppointmentService {
         }
     }
 
-    private void checkPatientConflict(Long patientId, LocalDateTime start, LocalDateTime end) {
-        List<Appointment> conflicts = appointmentRepository.findPatientConflictingAppointments(patientId, start, end);
+    private void checkPatientConflict(Long patientId, LocalDateTime start, LocalDateTime end, Long excludeId) {
+        List<Appointment> conflicts;
+        if (excludeId != null) {
+            conflicts = appointmentRepository.findPatientConflictingAppointmentsExcluding(patientId, start, end, excludeId);
+        } else {
+            conflicts = appointmentRepository.findPatientConflictingAppointments(patientId, start, end);
+        }
         if (!conflicts.isEmpty()) {
             throw new TimeConflictException("Patient has a conflicting appointment during this time");
         }

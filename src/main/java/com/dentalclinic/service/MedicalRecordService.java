@@ -91,7 +91,8 @@ public class MedicalRecordService {
     public void delete(Long id) {
         MedicalRecord record = medicalRecordRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Medical record", id));
-        medicalRecordRepository.delete(record);
-        log.info("Medical record deleted: id={}", id);
+        record.setActive(false);
+        medicalRecordRepository.save(record);
+        log.info("Medical record deactivated: id={}", id);
     }
 }

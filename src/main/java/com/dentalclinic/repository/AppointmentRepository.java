@@ -40,6 +40,14 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 
+    @Query("SELECT a FROM Appointment a WHERE a.patient.id = :patientId AND a.status != 'CANCELLED' " +
+           "AND a.startTime < :endTime AND a.endTime > :startTime AND a.id != :excludeId")
+    List<Appointment> findPatientConflictingAppointmentsExcluding(
+            @Param("patientId") Long patientId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("excludeId") Long excludeId);
+
     Page<Appointment> findByStatusAndStartTimeBetween(
             Appointment.AppointmentStatus status,
             LocalDateTime startTime,

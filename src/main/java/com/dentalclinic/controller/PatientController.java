@@ -5,7 +5,6 @@ import com.dentalclinic.controller.dto.common.PagedResponse;
 import com.dentalclinic.controller.dto.patient.PatientCreateRequest;
 import com.dentalclinic.controller.dto.patient.PatientResponse;
 import com.dentalclinic.controller.dto.patient.PatientUpdateRequest;
-import com.dentalclinic.domain.patient.Patient;
 import com.dentalclinic.service.PatientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
