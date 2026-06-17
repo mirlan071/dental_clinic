@@ -55,7 +55,7 @@ public class Patient extends BaseEntity {
     @Column(nullable = false)
     private boolean active = true;
 
-    @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = false)
+    @OneToMany(mappedBy = "patient", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @Builder.Default
     private List<com.dentalclinic.domain.appointment.Appointment> appointments = new ArrayList<>();
 

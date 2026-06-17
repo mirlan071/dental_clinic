@@ -37,7 +37,6 @@ public class PatientService {
         }
 
         Patient patient = patientMapper.toEntity(request);
-        patient.setGender(Patient.Gender.valueOf(request.getGender()));
         Patient saved = patientRepository.save(patient);
         log.info("Patient created: id={}, name={}", saved.getId(), saved.getFullName());
         return patientMapper.toResponse(saved);
@@ -80,9 +79,6 @@ public class PatientService {
         }
 
         patientMapper.updateEntity(request, patient);
-        if (request.getGender() != null) {
-            patient.setGender(Patient.Gender.valueOf(request.getGender()));
-        }
 
         Patient updated = patientRepository.save(patient);
         log.info("Patient updated: id={}", updated.getId());

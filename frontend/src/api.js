@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   headers: { 'Content-Type': 'application/json' }
 });
 
@@ -50,9 +50,9 @@ export const appointments = {
   byPatient: (id) => API.get(`/appointments/patient/${id}`),
   byDoctor: (id) => API.get(`/appointments/doctor/${id}`),
   create: (data) => API.post('/appointments', data),
-  reschedule: (id, data) => API.put(`/appointments/${id}/reschedule`, data),
+  reschedule: (id, newStartTime) => API.put(`/appointments/${id}/reschedule`, null, { params: { newStartTime } }),
   cancel: (id) => API.put(`/appointments/${id}/cancel`),
-  updateStatus: (id, status) => API.patch(`/appointments/${id}/status`, null, { params: { status } }),
+  updateStatus: (id, status) => API.patch(`/appointments/${id}/status`, { status }),
 };
 
 export const services = {

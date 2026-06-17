@@ -11,6 +11,8 @@ import java.time.LocalTime;
 @Table(name = "work_schedules", indexes = {
         @Index(name = "idx_work_schedule_doctor", columnList = "doctor_id"),
         @Index(name = "idx_work_schedule_day", columnList = "day_of_week")
+}, uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"doctor_id", "day_of_week"})
 })
 @Getter
 @Setter

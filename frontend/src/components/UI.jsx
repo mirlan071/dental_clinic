@@ -68,8 +68,8 @@ export function Table({ columns, data, onRowClick }) {
           <tr>{columns.map((c, i) => <th key={i}>{c.header}</th>)}</tr>
         </thead>
         <tbody>
-          {data.map((row) => (
-            <tr key={row.id ?? Math.random()} onClick={() => onRowClick?.(row)} style={{ cursor: onRowClick ? 'pointer' : 'default' }}>
+          {data.map((row, idx) => (
+            <tr key={row.id ?? `row-${idx}`} onClick={() => onRowClick?.(row)} style={{ cursor: onRowClick ? 'pointer' : 'default' }}>
               {columns.map((c, j) => <td key={j}>{c.render ? c.render(row) : row[c.accessor]}</td>)}
             </tr>
           ))}

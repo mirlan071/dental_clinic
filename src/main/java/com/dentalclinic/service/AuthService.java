@@ -2,6 +2,7 @@ package com.dentalclinic.service;
 
 import com.dentalclinic.controller.dto.auth.*;
 import com.dentalclinic.domain.user.User;
+import com.dentalclinic.exception.BusinessException;
 import com.dentalclinic.exception.DuplicateResourceException;
 import com.dentalclinic.mapper.UserMapper;
 import com.dentalclinic.repository.UserRepository;
@@ -54,7 +55,7 @@ public class AuthService {
         String refreshToken = request.getRefreshToken();
 
         if (!tokenProvider.validateRefreshToken(refreshToken)) {
-            throw new DuplicateResourceException("Invalid refresh token");
+            throw new BusinessException("INVALID_REFRESH_TOKEN", "Invalid or expired refresh token");
         }
 
         String username = tokenProvider.getUsernameFromToken(refreshToken);

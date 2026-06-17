@@ -15,6 +15,7 @@ import com.dentalclinic.repository.AppointmentRepository;
 import com.dentalclinic.repository.DoctorRepository;
 import com.dentalclinic.repository.DentalServiceRepository;
 import com.dentalclinic.repository.PatientRepository;
+import com.dentalclinic.repository.WorkScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,6 +36,7 @@ public class AppointmentService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final DentalServiceRepository dentalServiceRepository;
+    private final WorkScheduleRepository workScheduleRepository;
     private final AppointmentMapper appointmentMapper;
 
     @Transactional
@@ -55,7 +58,8 @@ public class AppointmentService {
         LocalDateTime endTime = request.getStartTime().plusMinutes(totalDuration);
 
         checkDoctorConflict(doctor.getId(), request.getStartTime(), endTime, null);
-        checkPatientConflict(patient.getId(), request.getStartTime(), endTime);
+        checkPatientConflict(patient.getId(), request.getStartTime(), endTime, null);
+        checkDoctorWorkSchedule(doctor.getId(), request.getStartTime(), endTime);
 
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
@@ -108,6 +112,7 @@ public class AppointmentService {
 
         checkDoctorConflict(appointment.getDoctor().getId(), newStartTime, newEndTime, id);
         checkPatientConflict(appointment.getPatient().getId(), newStartTime, newEndTime, id);
+        checkDoctorWorkSchedule(appointment.getDoctor().getId(), newStartTime, newEndTime);
 
         appointment.setStartTime(newStartTime);
         appointment.setEndTime(newEndTime);
@@ -180,6 +185,21 @@ public class AppointmentService {
         }
         if (!conflicts.isEmpty()) {
             throw new TimeConflictException("Patient has a conflicting appointment during this time");
+        }
+    }
+
+    private void checkDoctorWorkSchedule(Long doctorId, LocalDateTime startTime, LocalDateTime endTime) {
+        DayOfWeek dayOfWeek = startTime.getDayOfWeek();
+        List<com.dentalclinic.domain.doctor.WorkSchedule> schedules =
+                workScheduleRepository.findByDoctorIdAndDayOfWeekAndActiveTrue(doctorId, dayOfWeek);
+        if (schedules.isEmpty()) {
+            throw new BusinessException("Doctor does not work on " + dayOfWeek);
+        }
+        boolean withinSchedule = schedules.stream().anyMatch(s ->
+                !startTime.toLocalTime().isBefore(s.getStartTime()) &&
+                !endTime.toLocalTime().isAfter(s.getEndTime()));
+        if (!withinSchedule) {
+            throw new BusinessException("Appointment time is outside doctor's work schedule");
         }
     }
 }

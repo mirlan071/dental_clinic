@@ -32,9 +32,9 @@ public class CacheConfig {
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
-                .withCacheConfiguration("patients", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(5)))
-                .withCacheConfiguration("doctors", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(5)))
-                .withCacheConfiguration("services", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(15)))
+                .withCacheConfiguration("patients", config.entryTtl(Duration.ofMinutes(5)))
+                .withCacheConfiguration("doctors", config.entryTtl(Duration.ofMinutes(5)))
+                .withCacheConfiguration("services", config.entryTtl(Duration.ofMinutes(15)))
                 .build();
     }
 

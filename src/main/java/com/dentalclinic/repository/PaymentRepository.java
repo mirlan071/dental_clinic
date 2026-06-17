@@ -23,4 +23,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     BigDecimal sumByDateRange(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.invoice.id = :invoiceId")
+    BigDecimal sumAmountByInvoiceId(@Param("invoiceId") Long invoiceId);
 }

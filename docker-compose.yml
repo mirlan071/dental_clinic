@@ -51,7 +51,7 @@ services:
       - DB_PASSWORD=dental_secret
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=dHJ1bHlkb250YWxjbGluaWNzZWNyZXRrZXlmb3Jqd3R0b2tlbjIwMjRzdXBlcnNlY3VyZQ==
+      - JWT_SECRET=${JWT_SECRET:-dHJ1bHlkb250YWxjbGluaWNzZWNyZXRrZXlmb3Jqd3R0b2tlbjIwMjRzdXBlcnNlY3VyZQ==}
     depends_on:
       postgres:
         condition: service_healthy

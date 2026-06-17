@@ -24,6 +24,9 @@ import java.util.List;
 @Builder
 public class Invoice extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @Column(name = "invoice_number", nullable = false, unique = true, length = 50)
     private String invoiceNumber;
 

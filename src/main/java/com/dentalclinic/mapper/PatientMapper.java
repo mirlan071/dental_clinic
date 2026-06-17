@@ -9,6 +9,7 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface PatientMapper {
 
+    @Mapping(target = "gender", expression = "java(com.dentalclinic.domain.patient.Patient.Gender.valueOf(request.getGender()))")
     Patient toEntity(PatientCreateRequest request);
 
     PatientResponse toResponse(Patient patient);

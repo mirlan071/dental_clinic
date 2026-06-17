@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -103,8 +104,9 @@ public class FinanceService {
 
         Payment saved = paymentRepository.save(payment);
 
-        invoice.setPaidAmount(invoice.getPaidAmount().add(saved.getAmount()));
-        if (invoice.getPaidAmount().compareTo(invoice.getTotalAmount()) >= 0) {
+        BigDecimal newPaidAmount = paymentRepository.sumAmountByInvoiceId(invoice.getId());
+        invoice.setPaidAmount(newPaidAmount);
+        if (newPaidAmount.compareTo(invoice.getTotalAmount()) >= 0) {
             invoice.setStatus(Invoice.InvoiceStatus.PAID);
         } else {
             invoice.setStatus(Invoice.InvoiceStatus.PARTIALLY_PAID);
