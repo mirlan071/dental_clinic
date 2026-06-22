@@ -17,7 +17,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
 
 COPY --from=builder /app/target/dental-clinic-1.0.0.jar app.jar
 
-RUN chown appuser:appgroup app.jar
+RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
 
 USER appuser
 
