@@ -21,9 +21,9 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
 jwt:
-  secret: dHJ1bHlkb250YWxjbGluaWNzZWNyZXRrZXlmb3Jqd3R0b2tlbjIwMjRzdXBlcnNlY3VyZQ==
-  access-token-expiration: 3600000
-  refresh-token-expiration: 604800000
+  secret: ${JWT_SECRET:dHJ1bHlkb250YWxjbGluaWNzZWNyZXRrZXlmb3Jqd3R0b2tlbjIwMjRzdXBlcnNlY3VyZQ==}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
   level:

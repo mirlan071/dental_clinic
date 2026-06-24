@@ -53,53 +53,59 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        createUser("admin", "admin123", "admin@dentalclinic.com", "System", "Administrator", User.Role.ADMIN);
-        createUser("dr_smith", "doctor123", "smith@dentalclinic.com", "John", "Smith", User.Role.DOCTOR);
-        createUser("dr_jones", "doctor123", "jones@dentalclinic.com", "Emily", "Jones", User.Role.DOCTOR);
-        createUser("reception1", "reception123", "reception@dentalclinic.com", "Maria", "Garcia", User.Role.RECEPTIONIST);
+        createUser("admin", "admin123", "admin@dentalclinic.com", "Админ", "Главный");
         log.info("Users seeded");
     }
 
-    private void createUser(String username, String password, String email, String firstName, String lastName, User.Role role) {
+    private void createUser(String username, String password, String email, String firstName, String lastName) {
         User user = User.builder()
                 .username(username)
                 .password(passwordEncoder.encode(password))
                 .email(email)
                 .firstName(firstName)
                 .lastName(lastName)
-                .role(role)
                 .active(true)
                 .build();
         userRepository.save(user);
     }
 
     private void seedDoctors() {
-        User smith = userRepository.findByUsername("dr_smith").orElseThrow();
-        User jones = userRepository.findByUsername("dr_jones").orElseThrow();
-
         Doctor doctor1 = Doctor.builder()
-                .user(smith)
-                .specialization("General Dentistry")
+                .firstName("Джон")
+                .lastName("Смит")
+                .specialization("Терапевт")
                 .licenseNumber("DEN-001")
-                .biography("Experienced general dentist with 10 years of practice")
+                .biography("Опытный стоматолог-терапевт, 10 лет стажа")
                 .active(true)
                 .build();
         doctorRepository.save(doctor1);
 
         Doctor doctor2 = Doctor.builder()
-                .user(jones)
-                .specialization("Orthodontics")
+                .firstName("Эмили")
+                .lastName("Джонс")
+                .specialization("Ортодонт")
                 .licenseNumber("DEN-002")
-                .biography("Specialized in orthodontic treatments")
+                .biography("Специалист по ортодонтии")
                 .active(true)
                 .build();
         doctorRepository.save(doctor2);
+
+        Doctor doctor3 = Doctor.builder()
+                .firstName("Азамат")
+                .lastName("Козлов")
+                .specialization("Хирург")
+                .licenseNumber("DEN-003")
+                .biography("Стоматолог-хирург")
+                .active(true)
+                .build();
+        doctorRepository.save(doctor3);
         log.info("Doctors seeded");
     }
 
     private void seedWorkSchedules() {
         Doctor doctor1 = doctorRepository.findByLicenseNumber("DEN-001").orElseThrow();
         Doctor doctor2 = doctorRepository.findByLicenseNumber("DEN-002").orElseThrow();
+        Doctor doctor3 = doctorRepository.findByLicenseNumber("DEN-003").orElseThrow();
 
         List<DayOfWeek> weekdays = List.of(
                 DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
@@ -108,14 +114,12 @@ public class DataSeeder implements CommandLineRunner {
 
         for (DayOfWeek day : weekdays) {
             LocalTime end = day == DayOfWeek.FRIDAY ? LocalTime.of(15, 0) : LocalTime.of(17, 0);
-            WorkSchedule schedule = WorkSchedule.builder()
-                    .doctor(doctor1)
-                    .dayOfWeek(day)
-                    .startTime(LocalTime.of(9, 0))
-                    .endTime(end)
-                    .active(true)
-                    .build();
-            workScheduleRepository.save(schedule);
+            workScheduleRepository.save(WorkSchedule.builder()
+                    .doctor(doctor1).dayOfWeek(day)
+                    .startTime(LocalTime.of(9, 0)).endTime(end).active(true).build());
+            workScheduleRepository.save(WorkSchedule.builder()
+                    .doctor(doctor3).dayOfWeek(day)
+                    .startTime(LocalTime.of(9, 0)).endTime(end).active(true).build());
         }
 
         workScheduleRepository.save(WorkSchedule.builder()
@@ -131,55 +135,41 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedServices() {
-        createService("General Consultation", "Initial dental consultation and examination", 50.00, 30, "Consultation");
-        createService("Professional Cleaning", "Professional teeth cleaning and polishing", 80.00, 45, "Preventive");
-        createService("Dental Filling", "Composite or amalgam dental filling", 120.00, 45, "Restorative");
-        createService("Root Canal Treatment", "Endodontic root canal therapy", 500.00, 90, "Endodontics");
-        createService("Teeth Whitening", "Professional teeth whitening procedure", 250.00, 60, "Cosmetic");
-        createService("Dental Crown", "Porcelain or metal crown placement", 800.00, 60, "Prosthetics");
-        createService("Dental Implant", "Single tooth implant placement", 2000.00, 120, "Implantology");
-        createService("Orthodontic Consultation", "Orthodontic assessment and treatment planning", 100.00, 45, "Orthodontics");
-        createService("Braces Adjustment", "Orthodontic braces adjustment", 150.00, 30, "Orthodontics");
-        createService("Emergency Consultation", "Urgent dental care consultation", 75.00, 30, "Emergency");
-        log.info("Dental services seeded");
+        createService("Осмотр и консультация", "Первичный осмотр, диагностика", 2000, 30, "Диагностика");
+        createService("Профессиональная чистка", "Чистка зубов ультразвуком + полировка", 3500, 45, "Гигиена");
+        createService("Лечение кариеса", "Пломбирование зубов", 5000, 45, "Лечение");
+        createService("Лечение каналов", "Эндодонтическое лечение", 8000, 90, "Лечение");
+        createService("Отбел зубов", "Профессиональное отбеливание", 15000, 60, "Эстетика");
+        createService("Коронка", "Установка коронки", 12000, 60, "Протезирование");
+        createService("Имплант", "Установка импланта", 50000, 120, "Хирургия");
+        createService("Брекеты", "Установка брекет-системы", 80000, 60, "Ортодонтия");
+        createService("Удаление зуба", "Простое удаление", 5000, 30, "Хирургия");
+        createService("Экстренная помощь", "Срочная стоматологическая помощь", 3000, 30, "Экстренная");
+        log.info("Services seeded");
     }
 
     private void createService(String name, String description, double price, int duration, String category) {
-        DentalService service = DentalService.builder()
-                .name(name)
-                .description(description)
-                .price(BigDecimal.valueOf(price))
-                .durationMinutes(duration)
-                .category(category)
-                .active(true)
-                .build();
-        dentalServiceRepository.save(service);
+        dentalServiceRepository.save(DentalService.builder()
+                .name(name).description(description)
+                .price(BigDecimal.valueOf(price)).durationMinutes(duration)
+                .category(category).active(true).build());
     }
 
     private void seedPatients() {
-        createPatient("Alice", "Brown", "Jane", "+1234567890", "alice@email.com",
-                LocalDate.of(1990, 5, 15), Patient.Gender.FEMALE, "123 Main St");
-        createPatient("Bob", "Wilson", "Robert", "+0987654321", "bob@email.com",
-                LocalDate.of(1985, 8, 22), Patient.Gender.MALE, "456 Oak Ave");
-        createPatient("Carol", "Davis", "Ann", "+1122334455", "carol@email.com",
-                LocalDate.of(1995, 12, 3), Patient.Gender.FEMALE, "789 Pine Rd");
+        createPatient("Азамат", "Токтосунов", "+996700123456", "azamat@email.com",
+                LocalDate.of(1990, 5, 15), Patient.Gender.MALE, "г. Бишкек, ул. Ленина 10");
+        createPatient("Нурзат", "Кадырова", "+996777345678", "nurzat@email.com",
+                LocalDate.of(1992, 11, 10), Patient.Gender.FEMALE, "г. Бишкек, ул. Курманжан Датки 25");
+        createPatient("Бегимай", "Асанова", "+996555567890", "begimai@email.com",
+                LocalDate.of(1995, 9, 28), Patient.Gender.FEMALE, "г. Бишкек, пр. Манас 50");
         log.info("Patients seeded");
     }
 
-    private void createPatient(String firstName, String lastName, String patronymic,
-                               String phone, String email, LocalDate dob,
-                               Patient.Gender gender, String address) {
-        Patient patient = Patient.builder()
-                .firstName(firstName)
-                .lastName(lastName)
-                .patronymic(patronymic)
-                .phone(phone)
-                .email(email)
-                .dateOfBirth(dob)
-                .gender(gender)
-                .address(address)
-                .active(true)
-                .build();
-        patientRepository.save(patient);
+    private void createPatient(String firstName, String lastName, String phone, String email,
+                               LocalDate dob, Patient.Gender gender, String address) {
+        patientRepository.save(Patient.builder()
+                .firstName(firstName).lastName(lastName)
+                .phone(phone).email(email).dateOfBirth(dob)
+                .gender(gender).address(address).active(true).build());
     }
 }

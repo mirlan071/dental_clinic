@@ -50,7 +50,7 @@ export default function Layout() {
             <div className="user-avatar">{user?.firstName?.[0] || 'A'}</div>
             <div className="user-info">
               <div className="user-name">{user?.firstName} {user?.lastName}</div>
-              <div className="user-role">{user?.role || 'ADMIN'}</div>
+              <div className="user-role">{user?.username || 'admin'}</div>
             </div>
           </div>
           <button className="logout-btn" onClick={handleLogout}>Выйти</button>

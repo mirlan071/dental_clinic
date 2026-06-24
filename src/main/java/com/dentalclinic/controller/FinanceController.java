@@ -11,22 +11,30 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Finance", description = "Invoice and payment management endpoints")
 @RestController
-@RequestMapping("/finance")
+@RequestMapping("/api/v1/finance")
 @RequiredArgsConstructor
 public class FinanceController {
 
     private final FinanceService financeService;
 
+    @Operation(summary = "Get all invoices")
+    @GetMapping("/invoices")
+    public ResponseEntity<ApiResponse<PagedResponse<InvoiceResponse>>> getAllInvoices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "200") int size) {
+        Page<InvoiceResponse> invoices = financeService.getAllInvoices(PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        return ResponseEntity.ok(ApiResponse.success(toInvoicePagedResponse(invoices)));
+    }
+
     @Operation(summary = "Create a new invoice")
     @PostMapping("/invoices")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<InvoiceResponse>> createInvoice(
             @Valid @RequestBody InvoiceCreateRequest request) {
         InvoiceResponse invoice = financeService.createInvoice(request);
@@ -36,7 +44,6 @@ public class FinanceController {
 
     @Operation(summary = "Get invoice by ID")
     @GetMapping("/invoices/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<InvoiceResponse>> getInvoiceById(@PathVariable Long id) {
         InvoiceResponse invoice = financeService.getInvoiceById(id);
         return ResponseEntity.ok(ApiResponse.success(invoice));
@@ -44,7 +51,6 @@ public class FinanceController {
 
     @Operation(summary = "Get invoices by patient")
     @GetMapping("/invoices/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<InvoiceResponse>>> getInvoicesByPatient(
             @PathVariable Long patientId,
             @RequestParam(defaultValue = "0") int page,
@@ -55,7 +61,6 @@ public class FinanceController {
 
     @Operation(summary = "Get invoices by status")
     @GetMapping("/invoices/status/{status}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<InvoiceResponse>>> getInvoicesByStatus(
             @PathVariable Invoice.InvoiceStatus status,
             @RequestParam(defaultValue = "0") int page,
@@ -64,9 +69,15 @@ public class FinanceController {
         return ResponseEntity.ok(ApiResponse.success(toInvoicePagedResponse(invoices)));
     }
 
+    @Operation(summary = "Cancel an invoice")
+    @PutMapping("/invoices/{id}/cancel")
+    public ResponseEntity<ApiResponse<InvoiceResponse>> cancelInvoice(@PathVariable Long id) {
+        InvoiceResponse invoice = financeService.cancelInvoice(id);
+        return ResponseEntity.ok(ApiResponse.success("Invoice cancelled", invoice));
+    }
+
     @Operation(summary = "Create a payment")
     @PostMapping("/payments")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
             @Valid @RequestBody PaymentCreateRequest request) {
         PaymentResponse payment = financeService.createPayment(request);
@@ -76,7 +87,6 @@ public class FinanceController {
 
     @Operation(summary = "Get payments by invoice")
     @GetMapping("/payments/invoice/{invoiceId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<PaymentResponse>>> getPaymentsByInvoice(
             @PathVariable Long invoiceId,
             @RequestParam(defaultValue = "0") int page,
@@ -87,7 +97,6 @@ public class FinanceController {
 
     @Operation(summary = "Get payments by patient")
     @GetMapping("/payments/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<PaymentResponse>>> getPaymentsByPatient(
             @PathVariable Long patientId,
             @RequestParam(defaultValue = "0") int page,

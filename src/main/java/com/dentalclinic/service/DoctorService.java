@@ -3,12 +3,10 @@ package com.dentalclinic.service;
 import com.dentalclinic.controller.dto.doctor.*;
 import com.dentalclinic.domain.doctor.Doctor;
 import com.dentalclinic.domain.doctor.WorkSchedule;
-import com.dentalclinic.domain.user.User;
 import com.dentalclinic.exception.DuplicateResourceException;
 import com.dentalclinic.exception.ResourceNotFoundException;
 import com.dentalclinic.mapper.DoctorMapper;
 import com.dentalclinic.repository.DoctorRepository;
-import com.dentalclinic.repository.UserRepository;
 import com.dentalclinic.repository.WorkScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,20 +26,12 @@ import java.util.List;
 public class DoctorService {
 
     private final DoctorRepository doctorRepository;
-    private final UserRepository userRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final DoctorMapper doctorMapper;
 
     @Transactional
     @CacheEvict(value = "doctors", allEntries = true)
     public DoctorResponse create(DoctorCreateRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", request.getUserId()));
-
-        if (doctorRepository.findByUserId(request.getUserId()).isPresent()) {
-            throw new DuplicateResourceException("Doctor profile already exists for this user");
-        }
-
         if (request.getLicenseNumber() != null) {
             if (doctorRepository.findByLicenseNumber(request.getLicenseNumber()).isPresent()) {
                 throw new DuplicateResourceException("Doctor", "license number", request.getLicenseNumber());
@@ -49,7 +39,6 @@ public class DoctorService {
         }
 
         Doctor doctor = doctorMapper.toEntity(request);
-        doctor.setUser(user);
         Doctor saved = doctorRepository.save(doctor);
         log.info("Doctor created: id={}, name={}", saved.getId(), saved.getFullName());
         return doctorMapper.toResponse(saved);

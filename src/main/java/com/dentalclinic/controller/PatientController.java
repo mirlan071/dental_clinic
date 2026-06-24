@@ -15,12 +15,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Patients", description = "Patient management endpoints")
 @RestController
-@RequestMapping("/patients")
+@RequestMapping("/api/v1/patients")
 @RequiredArgsConstructor
 public class PatientController {
 
@@ -28,7 +27,6 @@ public class PatientController {
 
     @Operation(summary = "Create a new patient")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PatientResponse>> create(@Valid @RequestBody PatientCreateRequest request) {
         PatientResponse patient = patientService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -37,7 +35,6 @@ public class PatientController {
 
     @Operation(summary = "Get patient by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PatientResponse>> getById(@PathVariable Long id) {
         PatientResponse patient = patientService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(patient));
@@ -45,7 +42,6 @@ public class PatientController {
 
     @Operation(summary = "Get all patients with pagination")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<PatientResponse>>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -58,7 +54,6 @@ public class PatientController {
 
     @Operation(summary = "Search patients")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<PatientResponse>>> search(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
@@ -72,7 +67,6 @@ public class PatientController {
 
     @Operation(summary = "Update patient")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PatientResponse>> update(
             @PathVariable Long id,
             @Valid @RequestBody PatientUpdateRequest request) {
@@ -82,7 +76,6 @@ public class PatientController {
 
     @Operation(summary = "Delete (deactivate) patient")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         patientService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Patient deactivated", null));

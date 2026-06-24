@@ -1,7 +1,6 @@
 package com.dentalclinic.domain.doctor;
 
 import com.dentalclinic.domain.common.BaseEntity;
-import com.dentalclinic.domain.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,9 +18,11 @@ import java.util.List;
 @Builder
 public class Doctor extends BaseEntity {
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+    @Column(name = "first_name", nullable = false, length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false, length = 100)
+    private String lastName;
 
     @Column(nullable = false, length = 150)
     private String specialization;
@@ -40,6 +41,6 @@ public class Doctor extends BaseEntity {
     private List<WorkSchedule> workSchedules = new ArrayList<>();
 
     public String getFullName() {
-        return user.getFirstName() + " " + user.getLastName();
+        return firstName + " " + lastName;
     }
 }

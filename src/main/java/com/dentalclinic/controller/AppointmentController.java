@@ -17,22 +17,29 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
 @Tag(name = "Appointments", description = "Appointment management endpoints")
 @RestController
-@RequestMapping("/appointments")
+@RequestMapping("/api/v1/appointments")
 @RequiredArgsConstructor
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
 
+    @Operation(summary = "Get all appointments")
+    @GetMapping
+    public ResponseEntity<ApiResponse<PagedResponse<AppointmentResponse>>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "200") int size) {
+        Page<AppointmentResponse> appointments = appointmentService.getAll(PageRequest.of(page, size, Sort.by("startTime").descending()));
+        return ResponseEntity.ok(ApiResponse.success(toPagedResponse(appointments)));
+    }
+
     @Operation(summary = "Create a new appointment")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> create(@Valid @RequestBody AppointmentCreateRequest request) {
         AppointmentResponse appointment = appointmentService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -41,7 +48,6 @@ public class AppointmentController {
 
     @Operation(summary = "Get appointment by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> getById(@PathVariable Long id) {
         AppointmentResponse appointment = appointmentService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(appointment));
@@ -49,7 +55,6 @@ public class AppointmentController {
 
     @Operation(summary = "Get appointments by patient")
     @GetMapping("/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<AppointmentResponse>>> getByPatient(
             @PathVariable Long patientId,
             @RequestParam(defaultValue = "0") int page,
@@ -60,7 +65,6 @@ public class AppointmentController {
 
     @Operation(summary = "Get appointments by doctor")
     @GetMapping("/doctor/{doctorId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<AppointmentResponse>>> getByDoctor(
             @PathVariable Long doctorId,
             @RequestParam(defaultValue = "0") int page,
@@ -71,7 +75,6 @@ public class AppointmentController {
 
     @Operation(summary = "Reschedule appointment")
     @PutMapping("/{id}/reschedule")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> reschedule(
             @PathVariable Long id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime newStartTime) {
@@ -81,7 +84,6 @@ public class AppointmentController {
 
     @Operation(summary = "Cancel appointment")
     @PutMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> cancel(@PathVariable Long id) {
         AppointmentResponse appointment = appointmentService.cancel(id);
         return ResponseEntity.ok(ApiResponse.success("Appointment cancelled", appointment));
@@ -89,7 +91,6 @@ public class AppointmentController {
 
     @Operation(summary = "Update appointment status")
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<AppointmentResponse>> updateStatus(
             @PathVariable Long id,
             @Valid @RequestBody AppointmentUpdateRequest request) {
@@ -99,7 +100,6 @@ public class AppointmentController {
 
     @Operation(summary = "Get appointments by status and date range")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<AppointmentResponse>>> search(
             @RequestParam Appointment.AppointmentStatus status,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,

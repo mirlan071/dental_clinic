@@ -12,8 +12,11 @@ import lombok.NoArgsConstructor;
 @Builder
 public class DoctorCreateRequest {
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
+    @NotBlank(message = "First name is required")
+    private String firstName;
+
+    @NotBlank(message = "Last name is required")
+    private String lastName;
 
     @NotBlank(message = "Specialization is required")
     @Size(max = 150, message = "Specialization must not exceed 150 characters")

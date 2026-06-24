@@ -15,12 +15,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Dental Services", description = "Dental service catalog management endpoints")
 @RestController
-@RequestMapping("/services")
+@RequestMapping("/api/v1/services")
 @RequiredArgsConstructor
 public class DentalServiceController {
 
@@ -28,7 +27,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Create a new dental service")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DentalServiceResponse>> create(
             @Valid @RequestBody DentalServiceCreateRequest request) {
         DentalServiceResponse service = dentalServiceService.create(request);
@@ -38,7 +36,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Get service by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<DentalServiceResponse>> getById(@PathVariable Long id) {
         DentalServiceResponse service = dentalServiceService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(service));
@@ -46,7 +43,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Get all dental services")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<DentalServiceResponse>>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -59,7 +55,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Search dental services")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<DentalServiceResponse>>> search(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
@@ -70,7 +65,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Get services by category")
     @GetMapping("/category/{category}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<DentalServiceResponse>>> getByCategory(
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
@@ -81,7 +75,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Update dental service")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DentalServiceResponse>> update(
             @PathVariable Long id,
             @Valid @RequestBody DentalServiceUpdateRequest request) {
@@ -91,7 +84,6 @@ public class DentalServiceController {
 
     @Operation(summary = "Delete (deactivate) dental service")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         dentalServiceService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Service deactivated", null));

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Card, PageHeader, Button, Badge, Table, Tabs, Modal, Input } from '../components/UI';
-import { DEMO_APPOINTMENTS } from '../data/demo';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, PageHeader, Button, Badge, Table, Tabs, Modal, Input, Select, Loader } from '../components/UI';
+import { appointments as appointmentsApi, patients as patientsApi, doctors as doctorsApi, services as servicesApi } from '../api';
+import { useToast } from '../components/ToastContext';
 
 const statusTabs = [
   { value: 'all', label: 'Все' },
@@ -17,30 +18,99 @@ const statusBadge = (s) => {
 };
 
 export default function Appointments() {
-  const [data, setData] = useState(DEMO_APPOINTMENTS);
+  const { toast } = useToast();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
   const [detail, setDetail] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ patientFirstName: '', patientLastName: '', doctorFirstName: '', doctorLastName: '', startTime: '', serviceNames: '' });
+  const [form, setForm] = useState({ patientId: '', doctorId: '', serviceIds: [], startTime: '', notes: '' });
+
+  const [patientList, setPatientList] = useState([]);
+  const [doctorList, setDoctorList] = useState([]);
+  const [serviceList, setServiceList] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await appointmentsApi.list({ page: 0, size: 200 });
+      setData(res.data.data?.content || []);
+    } catch (err) {
+      toast.error('Не удалось загрузить записи');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const fetchDropdowns = useCallback(async () => {
+    try {
+      const [pRes, dRes, sRes] = await Promise.all([
+        patientsApi.list({ page: 0, size: 500 }),
+        doctorsApi.list({ page: 0, size: 500 }),
+        servicesApi.list({ page: 0, size: 500 }),
+      ]);
+      setPatientList(pRes.data.data?.content || []);
+      setDoctorList(dRes.data.data?.content || []);
+      setServiceList(sRes.data.data?.content || []);
+    } catch (err) {
+      console.error('Failed to load dropdowns', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); fetchDropdowns(); }, [fetchData, fetchDropdowns]);
 
   const filtered = tab === 'all' ? data : data.filter(a => a.status === tab);
 
-  const handleStatus = (id, status) => {
-    setData(data.map(a => a.id === id ? { ...a, status } : a));
+  const handleStatus = async (id, status) => {
+    try {
+      await appointmentsApi.updateStatus(id, status);
+      toast.success('Статус обновлён');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка обновления статуса');
+    }
   };
 
-  const handleSave = () => {
-    if (!form.patientFirstName || !form.startTime) return alert('Заполните обязательные поля');
-    setData([{ ...form, id: Date.now(), serviceNames: form.serviceNames ? form.serviceNames.split(',').map(s => s.trim()) : [], status: 'SCHEDULED' }, ...data]);
-    setModalOpen(false);
-    setForm({ patientFirstName: '', patientLastName: '', doctorFirstName: '', doctorLastName: '', startTime: '', serviceNames: '' });
+  const handleSave = async () => {
+    if (!form.patientId || !form.doctorId || !form.serviceIds.length || !form.startTime) return toast.warning('Заполните обязательные поля');
+    setSaving(true);
+    try {
+      await appointmentsApi.create({
+        patientId: parseInt(form.patientId),
+        doctorId: parseInt(form.doctorId),
+        serviceIds: form.serviceIds.map(Number),
+        startTime: form.startTime,
+        notes: form.notes,
+      });
+      toast.success('Запись создана');
+      setModalOpen(false);
+      setForm({ patientId: '', doctorId: '', serviceIds: [], startTime: '', notes: '' });
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка создания записи');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const toggleService = (id) => {
+    setForm(f => ({
+      ...f,
+      serviceIds: f.serviceIds.includes(id)
+        ? f.serviceIds.filter(s => s !== id)
+        : [...f.serviceIds, id],
+    }));
+  };
+
+  const patientOpts = patientList.map(p => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }));
+  const doctorOpts = doctorList.map(d => ({ value: d.id, label: `${d.firstName} ${d.lastName} — ${d.specialization}` }));
 
   const columns = [
     { header: 'Время', render: r => <div><b>{new Date(r.startTime).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })}</b><br/><span style={{ fontSize: 12, color: '#64748b' }}>{new Date(r.startTime).toLocaleDateString('ru')}</span></div> },
-    { header: 'Пациент', render: r => `${r.patientFirstName} ${r.patientLastName}` },
-    { header: 'Врач', render: r => `${r.doctorFirstName} ${r.doctorLastName}` },
-    { header: 'Услуги', render: r => r.serviceNames?.join(', ') || '—' },
+    { header: 'Пациент', render: r => r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : '—' },
+    { header: 'Врач', render: r => r.doctor ? `${r.doctor.firstName} ${r.doctor.lastName}` : '—' },
+    { header: 'Услуги', render: r => r.services?.map(s => s.name).join(', ') || '—' },
     { header: 'Статус', render: r => statusBadge(r.status) },
     { header: '', render: r => (
       <div style={{ display: 'flex', gap: 4 }}>
@@ -56,17 +126,18 @@ export default function Appointments() {
       <PageHeader title="Записи на приём" action={<Button onClick={() => setModalOpen(true)}>+ Новая запись</Button>} />
       <Card>
         <Tabs tabs={statusTabs} active={tab} onChange={setTab} />
-        <Table columns={columns} data={filtered} onRowClick={setDetail} />
+        {loading ? <Loader /> : <Table columns={columns} data={filtered} onRowClick={setDetail} />}
       </Card>
 
       <Modal open={!!detail} onClose={() => setDetail(null)} title="Детали записи" actions={<Button variant="outline" onClick={() => setDetail(null)}>Закрыть</Button>}>
         {detail && (
           <div>
-            <p><b>Пациент:</b> {detail.patientFirstName} {detail.patientLastName}</p>
-            <p><b>Врач:</b> {detail.doctorFirstName} {detail.doctorLastName}</p>
+            <p><b>Пациент:</b> {detail.patient?.firstName} {detail.patient?.lastName}</p>
+            <p><b>Врач:</b> {detail.doctor?.firstName} {detail.doctor?.lastName}</p>
             <p><b>Время:</b> {new Date(detail.startTime).toLocaleString('ru')}</p>
-            <p><b>Услуги:</b> {detail.serviceNames?.join(', ')}</p>
+            <p><b>Услуги:</b> {detail.services?.map(s => s.name).join(', ')}</p>
             <p><b>Статус:</b> {statusBadge(detail.status)}</p>
+            {detail.notes && <p><b>Заметки:</b> {detail.notes}</p>}
           </div>
         )}
       </Modal>
@@ -74,17 +145,28 @@ export default function Appointments() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Новая запись" actions={
         <>
           <Button variant="outline" onClick={() => setModalOpen(false)}>Отмена</Button>
-          <Button onClick={handleSave}>Сохранить</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</Button>
         </>
       }>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <Input label="Имя пациента *" value={form.patientFirstName} onChange={e => setForm({...form, patientFirstName: e.target.value})} />
-          <Input label="Фамилия пациента" value={form.patientLastName} onChange={e => setForm({...form, patientLastName: e.target.value})} />
-          <Input label="Имя врача" value={form.doctorFirstName} onChange={e => setForm({...form, doctorFirstName: e.target.value})} />
-          <Input label="Фамилия врача" value={form.doctorLastName} onChange={e => setForm({...form, doctorLastName: e.target.value})} />
-        </div>
+        <Select label="Пациент *" options={patientOpts} value={form.patientId} onChange={e => setForm({...form, patientId: e.target.value})} />
+        <Select label="Врач *" options={doctorOpts} value={form.doctorId} onChange={e => setForm({...form, doctorId: e.target.value})} />
         <Input label="Дата и время *" type="datetime-local" value={form.startTime} onChange={e => setForm({...form, startTime: e.target.value})} />
-        <Input label="Услуги (через запятую)" value={form.serviceNames} onChange={e => setForm({...form, serviceNames: e.target.value})} placeholder="Осмотр, Рентген" />
+        <div className="form-group">
+          <label className="form-label">Услуги *</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {serviceList.map(s => (
+              <Button
+                key={s.id}
+                size="sm"
+                variant={form.serviceIds.includes(s.id) ? 'primary' : 'outline'}
+                onClick={() => toggleService(s.id)}
+              >
+                {s.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <Input label="Заметки" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
       </Modal>
     </div>
   );

@@ -38,6 +38,7 @@ public class AppointmentService {
     private final DentalServiceRepository dentalServiceRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final AppointmentMapper appointmentMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public AppointmentResponse create(AppointmentCreateRequest request) {
@@ -73,7 +74,18 @@ public class AppointmentService {
         Appointment saved = appointmentRepository.save(appointment);
         log.info("Appointment created: id={}, patient={}, doctor={}",
                 saved.getId(), patient.getFullName(), doctor.getFullName());
+
+        if (patient.getEmail() != null && !patient.getEmail().isEmpty()) {
+            notificationService.notifyAppointmentCreated(
+                    patient.getEmail(), patient.getFullName(), doctor.getFullName(), saved.getId());
+        }
+
         return appointmentMapper.toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AppointmentResponse> getAll(Pageable pageable) {
+        return appointmentRepository.findAll(pageable).map(appointmentMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -134,6 +146,15 @@ public class AppointmentService {
         appointment.setStatus(Appointment.AppointmentStatus.CANCELLED);
         Appointment updated = appointmentRepository.save(appointment);
         log.info("Appointment cancelled: id={}", id);
+
+        Patient patient = appointment.getPatient();
+        if (patient.getEmail() != null && !patient.getEmail().isEmpty()) {
+            notificationService.notifyAppointmentCancelled(
+                    patient.getEmail(), patient.getFullName(), appointment.getDoctor().getFullName(),
+                    appointment.getStartTime().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")),
+                    id);
+        }
+
         return appointmentMapper.toResponse(updated);
     }
 

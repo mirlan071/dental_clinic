@@ -13,14 +13,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @Tag(name = "Doctors", description = "Doctor management endpoints")
 @RestController
-@RequestMapping("/doctors")
+@RequestMapping("/api/v1/doctors")
 @RequiredArgsConstructor
 public class DoctorController {
 
@@ -28,7 +27,6 @@ public class DoctorController {
 
     @Operation(summary = "Create a new doctor")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DoctorResponse>> create(@Valid @RequestBody DoctorCreateRequest request) {
         DoctorResponse doctor = doctorService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -37,7 +35,6 @@ public class DoctorController {
 
     @Operation(summary = "Get doctor by ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<DoctorResponse>> getById(@PathVariable Long id) {
         DoctorResponse doctor = doctorService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(doctor));
@@ -45,7 +42,6 @@ public class DoctorController {
 
     @Operation(summary = "Get all doctors")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<DoctorResponse>>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -58,7 +54,6 @@ public class DoctorController {
 
     @Operation(summary = "Search doctors")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<DoctorResponse>>> search(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
@@ -69,7 +64,6 @@ public class DoctorController {
 
     @Operation(summary = "Get doctors by specialization")
     @GetMapping("/specialization/{specialization}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<PagedResponse<DoctorResponse>>> getBySpecialization(
             @PathVariable String specialization,
             @RequestParam(defaultValue = "0") int page,
@@ -80,7 +74,6 @@ public class DoctorController {
 
     @Operation(summary = "Update doctor")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DoctorResponse>> update(
             @PathVariable Long id,
             @Valid @RequestBody DoctorUpdateRequest request) {
@@ -90,7 +83,6 @@ public class DoctorController {
 
     @Operation(summary = "Delete (deactivate) doctor")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         doctorService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Doctor deactivated", null));
@@ -98,7 +90,6 @@ public class DoctorController {
 
     @Operation(summary = "Add work schedule for doctor")
     @PostMapping("/{id}/schedule")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<WorkScheduleResponse>> addSchedule(
             @PathVariable Long id,
             @Valid @RequestBody WorkScheduleRequest request) {
@@ -109,7 +100,6 @@ public class DoctorController {
 
     @Operation(summary = "Get doctor work schedule")
     @GetMapping("/{id}/schedule")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'RECEPTIONIST')")
     public ResponseEntity<ApiResponse<List<WorkScheduleResponse>>> getSchedule(@PathVariable Long id) {
         List<WorkScheduleResponse> schedules = doctorService.getSchedule(id);
         return ResponseEntity.ok(ApiResponse.success(schedules));
@@ -117,7 +107,6 @@ public class DoctorController {
 
     @Operation(summary = "Remove work schedule")
     @DeleteMapping("/schedule/{scheduleId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> removeSchedule(@PathVariable Long scheduleId) {
         doctorService.removeSchedule(scheduleId);
         return ResponseEntity.ok(ApiResponse.success("Schedule removed", null));

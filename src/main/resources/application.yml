@@ -32,8 +32,13 @@ spring:
 
 server:
   port: 8080
-  servlet:
-    context-path: /api/v1
+
+spring.servlet.multipart:
+  max-file-size: 20MB
+  max-request-size: 20MB
+
+file.storage:
+  upload-dir: ./uploads/attachments
 
 management:
   endpoints:
@@ -43,6 +48,34 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+      probes:
+        enabled: true
+  health:
+    mail:
+      enabled: ${MAIL_HEALTH_ENABLED:false}
+
+spring.mail:
+  host: ${MAIL_HOST:smtp.gmail.com}
+  port: ${MAIL_PORT:587}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+
+rate-limit:
+  login:
+    max-requests: 10
+    window-seconds: 60
+  register:
+    max-requests: 5
+    window-seconds: 3600
+  default:
+    max-requests: 500
+    window-seconds: 60
 
 springdoc:
   api-docs:

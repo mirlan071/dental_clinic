@@ -29,11 +29,4 @@ public class RegisterRequest {
 
     @NotBlank(message = "Last name is required")
     private String lastName;
-
-    @NotBlank(message = "Role is required")
-    @jakarta.validation.constraints.Pattern(
-        regexp = "ADMIN|DOCTOR|RECEPTIONIST",
-        message = "Role must be one of: ADMIN, DOCTOR, RECEPTIONIST"
-    )
-    private String role;
 }

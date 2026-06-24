@@ -13,7 +13,6 @@ public interface UserMapper {
         user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setRole(User.Role.valueOf(request.getRole()));
         return user;
     }
 }

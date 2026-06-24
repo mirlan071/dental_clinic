@@ -11,16 +11,11 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        uses = {UserMapper.class})
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface DoctorMapper {
 
     Doctor toEntity(DoctorCreateRequest request);
 
-    @Mapping(source = "user.firstName", target = "firstName")
-    @Mapping(source = "user.lastName", target = "lastName")
-    @Mapping(source = "user.email", target = "email")
-    @Mapping(target = "userId", expression = "java(doctor.getUser().getId())")
     @Mapping(target = "fullName", expression = "java(doctor.getFullName())")
     DoctorResponse toResponse(Doctor doctor);
 

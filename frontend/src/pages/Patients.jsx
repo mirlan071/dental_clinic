@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Card, PageHeader, Button, Badge, Table, Modal, Input, Select } from '../components/UI';
-import { DEMO_PATIENTS } from '../data/demo';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, PageHeader, Button, Badge, Table, Modal, Input, Select, Loader } from '../components/UI';
+import { patients as patientsApi } from '../api';
+import { useToast } from '../components/ToastContext';
 
 const genderOptions = [
   { value: 'MALE', label: 'Мужской' },
@@ -10,40 +11,90 @@ const genderOptions = [
 const emptyForm = { firstName: '', lastName: '', phone: '', dateOfBirth: '', gender: 'MALE', email: '', address: '', insurancePolicy: '', notes: '' };
 
 export default function Patients() {
-  const [data, setData] = useState(DEMO_PATIENTS);
+  const { toast } = useToast();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  const filtered = search
-    ? data.filter(p => `${p.firstName} ${p.lastName} ${p.phone}`.toLowerCase().includes(search.toLowerCase()))
-    : data;
-
-  const pageSize = 8;
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
-
-  const handleSave = () => {
-    if (!form.firstName || !form.lastName || !form.phone) return alert('Заполните обязательные поля');
-    if (editId) {
-      setData(data.map(p => p.id === editId ? { ...p, ...form } : p));
-    } else {
-      setData([{ ...form, id: Date.now(), active: true }, ...data]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (search) {
+        const res = await patientsApi.search(search);
+        const items = res.data.data || [];
+        setData(items);
+        setTotalElements(items.length);
+        setTotalPages(1);
+      } else {
+        const res = await patientsApi.list({ page, size: 8, sort: 'id,desc' });
+        const paged = res.data.data;
+        setData(paged.content || []);
+        setTotalPages(paged.totalPages || 0);
+        setTotalElements(paged.totalElements || 0);
+      }
+    } catch (err) {
+      toast.error('Не удалось загрузить пациентов');
+    } finally {
+      setLoading(false);
     }
-    setModalOpen(false);
-    setForm(emptyForm);
-    setEditId(null);
+  }, [page, search, toast]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => { setPage(0); }, [search]);
+
+  const handleSave = async () => {
+    if (!form.firstName || !form.lastName || !form.phone) return toast.warning('Заполните обязательные поля');
+    setSaving(true);
+    try {
+      if (editId) {
+        await patientsApi.update(editId, form);
+        toast.success('Пациент обновлён');
+      } else {
+        await patientsApi.create(form);
+        toast.success('Пациент создан');
+      }
+      setModalOpen(false);
+      setForm(emptyForm);
+      setEditId(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Удалить пациента?')) return;
-    setData(data.filter(p => p.id !== id));
+    try {
+      await patientsApi.delete(id);
+      toast.success('Пациент удалён');
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка удаления');
+    }
   };
 
   const handleEdit = (row) => {
-    setForm(row);
+    setForm({
+      firstName: row.firstName || '',
+      lastName: row.lastName || '',
+      phone: row.phone || '',
+      dateOfBirth: row.dateOfBirth || '',
+      gender: row.gender || 'MALE',
+      email: row.email || '',
+      address: row.address || '',
+      insurancePolicy: row.insurancePolicy || '',
+      notes: row.notes || '',
+    });
     setEditId(row.id);
     setModalOpen(true);
   };
@@ -64,32 +115,40 @@ export default function Patients() {
     )},
   ];
 
+  const pageSize = 8;
+  const startItem = page * pageSize + 1;
+  const endItem = Math.min((page + 1) * pageSize, totalElements);
+
   return (
     <div style={{ padding: 24 }}>
       <PageHeader title="Пациенты" action={<Button onClick={() => { setForm(emptyForm); setEditId(null); setModalOpen(true); }}>+ Новый пациент</Button>} />
       <Card>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <div className="search-bar" style={{ flex: 1 }}>
-            <input className="form-input" placeholder="Поиск по имени, телефону..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+            <input className="form-input" placeholder="Поиск по имени, телефону..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
-        <Table columns={columns} data={paged} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, fontSize: 13, color: '#64748b' }}>
-          <span>Показано {((page-1)*pageSize)+1}-{Math.min(page*pageSize, filtered.length)} из {filtered.length}</span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <Button size="sm" variant="outline" disabled={page<=1} onClick={() => setPage(page-1)}>←</Button>
-            {Array.from({length: totalPages}, (_, i) => i+1).map(p => (
-              <Button key={p} size="sm" variant={p===page?'primary':'outline'} onClick={() => setPage(p)}>{p}</Button>
-            ))}
-            <Button size="sm" variant="outline" disabled={page>=totalPages} onClick={() => setPage(page+1)}>→</Button>
-          </div>
-        </div>
+        {loading ? <Loader /> : (
+          <>
+            <Table columns={columns} data={data} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, fontSize: 13, color: '#64748b' }}>
+              <span>{totalElements > 0 ? `Показано ${startItem}-${endItem} из ${totalElements}` : 'Нет данных'}</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <Button size="sm" variant="outline" disabled={page <= 0} onClick={() => setPage(page - 1)}>←</Button>
+                {Array.from({ length: totalPages }, (_, i) => i).map(p => (
+                  <Button key={p} size="sm" variant={p === page ? 'primary' : 'outline'} onClick={() => setPage(p)}>{p + 1}</Button>
+                ))}
+                <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>→</Button>
+              </div>
+            </div>
+          </>
+        )}
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editId ? 'Редактировать пациента' : 'Новый пациент'} actions={
         <>
           <Button variant="outline" onClick={() => setModalOpen(false)}>Отмена</Button>
-          <Button onClick={handleSave}>Сохранить</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</Button>
         </>
       }>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>

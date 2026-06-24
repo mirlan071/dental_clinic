@@ -45,7 +45,6 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(tokenProvider.getAccessTokenExpiration())
-                .role(user.getRole().name())
                 .username(user.getUsername())
                 .build();
     }
@@ -62,16 +61,12 @@ public class AuthService {
         String newAccessToken = tokenProvider.generateAccessToken(username);
         String newRefreshToken = tokenProvider.generateRefreshToken(username);
 
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new DuplicateResourceException("User", "username", username));
-
         return TokenResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .tokenType("Bearer")
                 .expiresIn(tokenProvider.getAccessTokenExpiration())
-                .role(user.getRole().name())
-                .username(user.getUsername())
+                .username(username)
                 .build();
     }
 
@@ -99,7 +94,6 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .expiresIn(tokenProvider.getAccessTokenExpiration())
-                .role(saved.getRole().name())
                 .username(saved.getUsername())
                 .build();
     }

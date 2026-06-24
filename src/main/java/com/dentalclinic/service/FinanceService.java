@@ -37,6 +37,7 @@ public class FinanceService {
     private final PatientRepository patientRepository;
     private final AppointmentRepository appointmentRepository;
     private final FinanceMapper financeMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public InvoiceResponse createInvoice(InvoiceCreateRequest request) {
@@ -60,6 +61,11 @@ public class FinanceService {
         Invoice saved = invoiceRepository.save(invoice);
         log.info("Invoice created: number={}, patient={}", saved.getInvoiceNumber(), patient.getFullName());
         return financeMapper.toInvoiceResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<InvoiceResponse> getAllInvoices(Pageable pageable) {
+        return invoiceRepository.findAll(pageable).map(financeMapper::toInvoiceResponse);
     }
 
     @Transactional(readOnly = true)
@@ -114,6 +120,15 @@ public class FinanceService {
         invoiceRepository.save(invoice);
 
         log.info("Payment created: invoice={}, amount={}", invoice.getInvoiceNumber(), saved.getAmount());
+
+        Patient patient = invoice.getPatient();
+        if (patient.getEmail() != null && !patient.getEmail().isEmpty()) {
+            notificationService.notifyPaymentReceived(
+                    patient.getEmail(), patient.getFullName(),
+                    invoice.getInvoiceNumber(), saved.getAmount().toPlainString(),
+                    invoice.getId());
+        }
+
         return financeMapper.toPaymentResponse(saved);
     }
 
@@ -126,6 +141,21 @@ public class FinanceService {
     @Transactional(readOnly = true)
     public Page<PaymentResponse> getPaymentsByPatient(Long patientId, Pageable pageable) {
         return paymentRepository.findByPatientId(patientId, pageable).map(financeMapper::toPaymentResponse);
+    }
+
+    @Transactional
+    public InvoiceResponse cancelInvoice(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice", id));
+
+        if (invoice.getStatus() == Invoice.InvoiceStatus.CANCELLED) {
+            throw new BusinessException("Invoice is already cancelled");
+        }
+
+        invoice.setStatus(Invoice.InvoiceStatus.CANCELLED);
+        Invoice saved = invoiceRepository.save(invoice);
+        log.info("Invoice cancelled: number={}", saved.getInvoiceNumber());
+        return financeMapper.toInvoiceResponse(saved);
     }
 
     private String generateInvoiceNumber() {

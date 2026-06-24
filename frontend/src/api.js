@@ -11,13 +11,66 @@ API.interceptors.request.use(config => {
   return config;
 });
 
-API.interceptors.response.use(r => r, error => {
-  if (error.response?.status === 401) {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
+  });
+  failedQueue = [];
+};
+
+API.interceptors.response.use(
+  response => response,
+  async error => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return API(originalRequest);
+        });
+      }
+      originalRequest._retry = true;
+      isRefreshing = true;
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+      try {
+        const { data } = await axios.post(
+          `${API.defaults.baseURL}/auth/refresh`,
+          { refreshToken },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        const newToken = data.data.accessToken;
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('refreshToken', data.data.refreshToken);
+        API.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        processQueue(null, newToken);
+        return API(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    return Promise.reject(error);
   }
-  return Promise.reject(error);
-});
+);
 
 export const auth = {
   login: (data) => API.post('/auth/login', data),
@@ -72,6 +125,18 @@ export const medicalRecords = {
   create: (data) => API.post('/medical-records', data),
   update: (id, data) => API.put(`/medical-records/${id}`, data),
   delete: (id) => API.delete(`/medical-records/${id}`),
+  uploadDocument: (recordId, file, description) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (description) formData.append('description', description);
+    return API.post(`/medical-records/${recordId}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  downloadDocument: (attachmentId) => API.get(`/medical-records/documents/${attachmentId}/download`, {
+    responseType: 'blob',
+  }),
+  deleteDocument: (attachmentId) => API.delete(`/medical-records/documents/${attachmentId}`),
 };
 
 export const finance = {
@@ -81,6 +146,7 @@ export const finance = {
     byPatient: (id) => API.get(`/finance/invoices/patient/${id}`),
     byStatus: (s) => API.get(`/finance/invoices/status/${s}`),
     create: (data) => API.post('/finance/invoices', data),
+    cancel: (id) => API.put(`/finance/invoices/${id}/cancel`),
   },
   payments: {
     create: (data) => API.post('/finance/payments', data),
